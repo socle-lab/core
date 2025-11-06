@@ -4,6 +4,14 @@
 > A foundation for builders.
 > With **Socle**, and upon this foundation, we build the era of **sovereign code**.
 
+
+
+---
+
+> ⚠️ **Under Active Development**  
+> Socle Core is currently under heavy development.  
+> The API is not stable yet — please **do not use it in production** or download it until the first official release (`v1.0.0`).
+
 ---
 
 ## 🧠 Overview
