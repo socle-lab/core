@@ -14,6 +14,7 @@ import (
 
 func (c *Core) middlewareRegistry() map[string]func(http.Handler) http.Handler {
 	return map[string]func(http.Handler) http.Handler{
+		"logger":                 middleware.Logger,
 		"request_id":             middleware.RequestID,
 		"real_ip":                middleware.RealIP,
 		"recovery":               middleware.Recoverer,
