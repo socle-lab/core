@@ -1,12 +1,12 @@
-package socle
+package core
 
 import "github.com/socle-lab/core/pkg/auth"
 
-func (s *Socle) GenerateApiToken(username string) (string, *auth.Payload, error) {
-	tokenString, payload, err := s.Authenticator.GenerateToken(
+func (c *Core) GenerateApiToken(username string) (string, *auth.Payload, error) {
+	tokenString, payload, err := c.Authenticator.GenerateToken(
 		username,
-		s.env.auth.token.exp,
-		s.env.auth.token.iss,
+		c.env.auth.token.exp,
+		c.env.auth.token.iss,
 	)
 
 	if err != nil {
@@ -15,11 +15,11 @@ func (s *Socle) GenerateApiToken(username string) (string, *auth.Payload, error)
 	return tokenString, payload, nil
 }
 
-func (s *Socle) GenerateRefreshToken(username string) (string, *auth.Payload, error) {
-	tokenString, payload, err := s.Authenticator.GenerateToken(
+func (c *Core) GenerateRefreshToken(username string) (string, *auth.Payload, error) {
+	tokenString, payload, err := c.Authenticator.GenerateToken(
 		username,
-		s.env.auth.token.refresh,
-		s.env.auth.token.iss,
+		c.env.auth.token.refresh,
+		c.env.auth.token.iss,
 	)
 
 	if err != nil {
@@ -28,8 +28,8 @@ func (s *Socle) GenerateRefreshToken(username string) (string, *auth.Payload, er
 	return tokenString, payload, nil
 }
 
-func (s *Socle) ValidateToken(token string) (*auth.Payload, error) {
-	payload, err := s.Authenticator.ValidateToken(token)
+func (c *Core) ValidateToken(token string) (*auth.Payload, error) {
+	payload, err := c.Authenticator.ValidateToken(token)
 
 	if err != nil {
 		return nil, err

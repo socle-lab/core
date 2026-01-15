@@ -1,4 +1,4 @@
-package socle
+package core
 
 import (
 	"net/http"
@@ -15,7 +15,7 @@ type Validation struct {
 	Errors map[string]string
 }
 
-func (c *Socle) Validator(data url.Values) *Validation {
+func (c *Core) Validator(data url.Values) *Validation {
 	return &Validation{
 		Errors: make(map[string]string),
 		Data:   data,

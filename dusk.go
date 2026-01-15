@@ -1,4 +1,4 @@
-package socle
+package core
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	"github.com/go-rod/rod/lib/utils"
 )
 
-func (c *Socle) TakeScreenShot(pageURL, testName string, w, h float64) {
+func (c *Core) TakeScreenShot(pageURL, testName string, w, h float64) {
 	page := rod.New().MustConnect().MustIgnoreCertErrors(true).MustPage(pageURL).MustWaitLoad()
 
 	img, _ := page.Screenshot(true, &proto.PageCaptureScreenshot{
@@ -27,10 +27,10 @@ func (c *Socle) TakeScreenShot(pageURL, testName string, w, h float64) {
 	_ = utils.OutputFile(fmt.Sprintf("%s/screenshots/%s-%s.png", c.RootPath, testName, fileName), img)
 }
 
-func (c *Socle) FetchPage(pageURL string) *rod.Page {
+func (c *Core) FetchPage(pageURL string) *rod.Page {
 	return rod.New().MustConnect().MustIgnoreCertErrors(true).MustPage(pageURL).MustWaitLoad()
 }
 
-func (c *Socle) SelectElementByID(page *rod.Page, id string) *rod.Element {
+func (c *Core) SelectElementByID(page *rod.Page, id string) *rod.Element {
 	return page.MustElementByJS(fmt.Sprintf("document.getElementById('%s')", id))
 }

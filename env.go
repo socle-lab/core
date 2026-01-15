@@ -1,4 +1,4 @@
-package socle
+package core
 
 import (
 	"log"

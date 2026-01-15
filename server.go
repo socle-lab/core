@@ -1,4 +1,4 @@
-package socle
+package core
 
 import (
 	"context"
@@ -15,20 +15,20 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 )
 
-func (s *Socle) ListenAndServe() error {
+func (c *Core) ListenAndServe() error {
 	var err error
 
 	srv := &http.Server{
-		Addr:         s.Server.GetURL(),
-		ErrorLog:     s.Log.ErrorLog,
-		Handler:      s.Routes,
+		Addr:         c.Server.GetURL(),
+		ErrorLog:     c.Log.ErrorLog,
+		Handler:      c.Routes,
 		IdleTimeout:  30 * time.Second,
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 600 * time.Second,
 	}
 
-	if s.DB.Pool != nil {
-		defer s.DB.Pool.Close()
+	if c.DB.Pool != nil {
+		defer c.DB.Pool.Close()
 	}
 
 	if redisPool != nil {
@@ -39,7 +39,7 @@ func (s *Socle) ListenAndServe() error {
 		defer badgerConn.Close()
 	}
 
-	go s.listenMaintenance()
+	go c.listenMaintenance()
 
 	// start Gracefull server shutdown
 	shutdown := make(chan error)
@@ -53,24 +53,24 @@ func (s *Socle) ListenAndServe() error {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
-		s.Log.InfoLog.Println("signal caught", "signal", q.String())
+		c.Log.InfoLog.Println("signal caught", "signal", q.String())
 
 		shutdown <- srv.Shutdown(ctx)
 	}()
 	// end
 
-	s.Log.InfoLog.Printf("Listening on  %s with security %v", s.Server.GetURL(), s.Server.Secure)
-	if s.Server.Secure {
-		s.Log.InfoLog.Println("Begin TLS  Security")
+	c.Log.InfoLog.Printf("Listening on  %s with security %v", c.Server.GetURL(), c.Server.Secure)
+	if c.Server.Secure {
+		c.Log.InfoLog.Println("Begin TLS  Security")
 
-		switch s.Server.Security.Strategy {
+		switch c.Server.Security.Strategy {
 		case "self":
-			s.Log.InfoLog.Println("Begin SELF TLS  Security")
+			c.Log.InfoLog.Println("Begin SELF TLS  Security")
 			srv.TLSConfig = &tls.Config{
 				MinVersion: tls.VersionTLS13,
 			}
 			var caBytes []byte
-			caBytes, err = os.ReadFile(s.Server.Security.CAName + ".crt")
+			caBytes, err = os.ReadFile(c.Server.Security.CAName + ".crt")
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -80,19 +80,19 @@ func (s *Socle) ListenAndServe() error {
 			}
 			srv.TLSConfig.ClientCAs = ca
 
-			if s.Server.Security.MutualTLS {
+			if c.Server.Security.MutualTLS {
 				srv.TLSConfig.ClientAuth = tls.RequireAndVerifyClientCert
 
 			}
 
-			err = srv.ListenAndServeTLS(s.Server.Security.ServerCertName+".crt", s.Server.Security.ServerCertName+".key")
+			err = srv.ListenAndServeTLS(c.Server.Security.ServerCertName+".crt", c.Server.Security.ServerCertName+".key")
 		case "le":
-			s.Log.InfoLog.Println("Begin Let's Encrypt Security")
-			err = http.Serve(autocert.NewListener(s.Server.Security.DSN), nil)
+			c.Log.InfoLog.Println("Begin Let's Encrypt Security")
+			err = http.Serve(autocert.NewListener(c.Server.Security.DSN), nil)
 		}
 
 	} else {
-		s.Log.InfoLog.Println("Skip TLS  Security")
+		c.Log.InfoLog.Println("Skip TLS  Security")
 
 		err = srv.ListenAndServe()
 	}
@@ -106,7 +106,7 @@ func (s *Socle) ListenAndServe() error {
 		return err
 	}
 
-	s.Log.InfoLog.Println("server has stopped")
+	c.Log.InfoLog.Println("server has stopped")
 
 	return nil
 }

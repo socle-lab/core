@@ -1,4 +1,4 @@
-package socle
+package core
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 
 // LoadTime calculates function execution time. To use, add
 // defer c.LoadTime(time.Now()) to the function body
-func (c *Socle) LoadTime(start time.Time) {
+func (c *Core) LoadTime(start time.Time) {
 	elapsed := time.Since(start)
 	pc, _, _, _ := runtime.Caller(1)
 	funcObj := runtime.FuncForPC(pc)

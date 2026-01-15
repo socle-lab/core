@@ -1,4 +1,4 @@
-package socle
+package core
 
 import (
 	"log"
@@ -13,7 +13,7 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
-func (c *Socle) PopConnect() (*pop.Connection, error) {
+func (c *Core) PopConnect() (*pop.Connection, error) {
 	tx, err := pop.Connect("development")
 	if err != nil {
 		return nil, err
@@ -21,7 +21,7 @@ func (c *Socle) PopConnect() (*pop.Connection, error) {
 	return tx, nil
 }
 
-func (c *Socle) CreatePopMigration(up, down []byte, migrationName, migrationType string) error {
+func (c *Core) CreatePopMigration(up, down []byte, migrationName, migrationType string) error {
 	var migrationPath = c.RootPath + "/migrations"
 	err := pop.MigrationCreate(migrationPath, migrationName, migrationType, up, down)
 	if err != nil {
@@ -30,7 +30,7 @@ func (c *Socle) CreatePopMigration(up, down []byte, migrationName, migrationType
 	return nil
 }
 
-func (c *Socle) RunPopMigrations(tx *pop.Connection) error {
+func (c *Core) RunPopMigrations(tx *pop.Connection) error {
 	var migrationPath = c.RootPath + "/migrations"
 
 	fm, err := pop.NewFileMigrator(migrationPath, tx)
@@ -45,7 +45,7 @@ func (c *Socle) RunPopMigrations(tx *pop.Connection) error {
 	return nil
 }
 
-func (c *Socle) PopMigrateDown(tx *pop.Connection, steps ...int) error {
+func (c *Core) PopMigrateDown(tx *pop.Connection, steps ...int) error {
 	var migrationPath = c.RootPath + "/migrations"
 
 	step := 1
@@ -66,7 +66,7 @@ func (c *Socle) PopMigrateDown(tx *pop.Connection, steps ...int) error {
 	return nil
 }
 
-func (c *Socle) PopMigrateReset(tx *pop.Connection) error {
+func (c *Core) PopMigrateReset(tx *pop.Connection) error {
 	var migrationPath = c.RootPath + "/migrations"
 
 	fm, err := pop.NewFileMigrator(migrationPath, tx)
@@ -81,7 +81,7 @@ func (c *Socle) PopMigrateReset(tx *pop.Connection) error {
 	return nil
 }
 
-func (c *Socle) MigrateUp(dsn string) error {
+func (c *Core) MigrateUp(dsn string) error {
 	m, err := migrate.New("file://"+c.RootPath+"/migrations", dsn)
 	if err != nil {
 		return err
@@ -95,7 +95,7 @@ func (c *Socle) MigrateUp(dsn string) error {
 	return nil
 }
 
-func (c *Socle) MigrateDownAll(dsn string) error {
+func (c *Core) MigrateDownAll(dsn string) error {
 	m, err := migrate.New("file://"+c.RootPath+"/migrations", dsn)
 	if err != nil {
 		return err
@@ -109,7 +109,7 @@ func (c *Socle) MigrateDownAll(dsn string) error {
 	return nil
 }
 
-func (c *Socle) Steps(n int, dsn string) error {
+func (c *Core) Steps(n int, dsn string) error {
 	m, err := migrate.New("file://"+c.RootPath+"/migrations", dsn)
 	if err != nil {
 		return err
@@ -123,7 +123,7 @@ func (c *Socle) Steps(n int, dsn string) error {
 	return nil
 }
 
-func (c *Socle) MigrateForce(dsn string) error {
+func (c *Core) MigrateForce(dsn string) error {
 	m, err := migrate.New("file://"+c.RootPath+"/migrations", dsn)
 	if err != nil {
 		return err

@@ -1,4 +1,4 @@
-package socle
+package core
 
 import (
 	"encoding/json"
@@ -12,23 +12,23 @@ import (
 	"github.com/justinas/nosurf"
 )
 
-func (s *Socle) middlewareRegistry() map[string]func(http.Handler) http.Handler {
+func (c *Core) middlewareRegistry() map[string]func(http.Handler) http.Handler {
 	return map[string]func(http.Handler) http.Handler{
 		"request_id":             middleware.RequestID,
 		"real_ip":                middleware.RealIP,
 		"recovery":               middleware.Recoverer,
-		"session":                s.SessionLoadMiddleware,
-		"ratelimite":             s.RateLimiterMiddleware,
-		"no_surf":                s.NoSurfMiddleware, // CSRF protection
-		"maintenance_mode_check": s.MaintenanceModeCheckMiddleware,
+		"session":                c.SessionLoadMiddleware,
+		"ratelimite":             c.RateLimiterMiddleware,
+		"no_surf":                c.NoSurfMiddleware, // CSRF protection
+		"maintenance_mode_check": c.MaintenanceModeCheckMiddleware,
 
-		//"auth":       s.AuthMiddleware,
-		//"healthcheck": s.HealthCheckMiddleware,
+		//"auth":       c.AuthMiddleware,
+		//"healthcheck": c.HealthCheckMiddleware,
 	}
 }
 
-func (s *Socle) applyMiddlewares(r chi.Router, names []string) {
-	registry := s.middlewareRegistry()
+func (c *Core) applyMiddlewares(r chi.Router, names []string) {
+	registry := c.middlewareRegistry()
 
 	for _, name := range names {
 		if mw, ok := registry[name]; ok {
@@ -39,15 +39,15 @@ func (s *Socle) applyMiddlewares(r chi.Router, names []string) {
 	}
 }
 
-func (s *Socle) SessionLoadMiddleware(next http.Handler) http.Handler {
-	s.Log.InfoLog.Println("SessionLoad callled")
-	return s.Session.LoadAndSave(next)
+func (c *Core) SessionLoadMiddleware(next http.Handler) http.Handler {
+	c.Log.InfoLog.Println("SessionLoad callled")
+	return c.Session.LoadAndSave(next)
 }
 
-func (s *Socle) NoSurfMiddleware(next http.Handler) http.Handler {
-	s.Log.InfoLog.Println("No surf middleware callled")
+func (c *Core) NoSurfMiddleware(next http.Handler) http.Handler {
+	c.Log.InfoLog.Println("No surf middleware callled")
 	csrfHandler := nosurf.New(next)
-	secure, _ := strconv.ParseBool(s.env.cookie.secure)
+	secure, _ := strconv.ParseBool(c.env.cookie.secure)
 
 	csrfHandler.ExemptGlob("/api/*")
 	csrfHandler.SetBaseCookie(http.Cookie{
@@ -55,20 +55,20 @@ func (s *Socle) NoSurfMiddleware(next http.Handler) http.Handler {
 		Path:     "/",
 		Secure:   secure,
 		SameSite: http.SameSiteStrictMode,
-		Domain:   s.env.cookie.domain,
+		Domain:   c.env.cookie.domain,
 	})
 
 	return csrfHandler
 }
 
-func (s *Socle) MaintenanceModeCheckMiddleware(next http.Handler) http.Handler {
+func (c *Core) MaintenanceModeCheckMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if maintenanceMode {
 			if !strings.Contains(r.URL.Path, "/public/maintenance.html") {
 				w.WriteHeader(http.StatusServiceUnavailable)
 				w.Header().Set("Retry-After:", "300")
 				w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, post-check=0, pre-check=0")
-				http.ServeFile(w, r, fmt.Sprintf("%s/public/maintenance.html", s.RootPath))
+				http.ServeFile(w, r, fmt.Sprintf("%s/public/maintenance.html", c.RootPath))
 				return
 			}
 		}
@@ -76,10 +76,10 @@ func (s *Socle) MaintenanceModeCheckMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (s *Socle) RateLimiterMiddleware(next http.Handler) http.Handler {
+func (c *Core) RateLimiterMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if s.env.rateLimiter.Enabled {
-			if allow, retryAfter := s.RateLimiter.Allow(r.RemoteAddr); !allow {
+		if c.env.rateLimiter.Enabled {
+			if allow, retryAfter := c.RateLimiter.Allow(r.RemoteAddr); !allow {
 				w.WriteHeader(http.StatusTooManyRequests)
 				w.Header().Set("Retry-After:", retryAfter.String())
 				w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, post-check=0, pre-check=0")

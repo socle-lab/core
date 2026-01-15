@@ -1,4 +1,4 @@
-package socle
+package core
 
 import (
 	"errors"
@@ -12,23 +12,23 @@ import (
 	"github.com/socle-lab/filesystems"
 )
 
-func (s *Socle) UploadFile(r *http.Request, destination, field string, fs filesystems.FS) error {
-	fileName, err := s.getFileToUpload(r, field)
+func (c *Core) UploadFile(r *http.Request, destination, field string, fs filesystems.FS) error {
+	fileName, err := c.getFileToUpload(r, field)
 	if err != nil {
-		s.Log.ErrorLog.Println(err)
+		c.Log.ErrorLog.Println(err)
 		return err
 	}
 
 	if fs != nil {
 		err = fs.Put(fileName, destination)
 		if err != nil {
-			s.Log.ErrorLog.Println(err)
+			c.Log.ErrorLog.Println(err)
 			return err
 		}
 	} else {
 		err = os.Rename(fileName, fmt.Sprintf("%s/%s", destination, path.Base(fileName)))
 		if err != nil {
-			s.Log.ErrorLog.Println(err)
+			c.Log.ErrorLog.Println(err)
 			return err
 		}
 	}
@@ -40,8 +40,8 @@ func (s *Socle) UploadFile(r *http.Request, destination, field string, fs filesy
 	return nil
 }
 
-func (s *Socle) getFileToUpload(r *http.Request, fieldName string) (string, error) {
-	_ = r.ParseMultipartForm(s.env.uploads.maxUploadSize)
+func (c *Core) getFileToUpload(r *http.Request, fieldName string) (string, error) {
+	_ = r.ParseMultipartForm(c.env.uploads.maxUploadSize)
 
 	file, header, err := r.FormFile(fieldName)
 	if err != nil {
@@ -60,7 +60,7 @@ func (s *Socle) getFileToUpload(r *http.Request, fieldName string) (string, erro
 		return "", err
 	}
 
-	if !inSlice(s.env.uploads.allowedMimeTypes, mimeType.String()) {
+	if !inSlice(c.env.uploads.allowedMimeTypes, mimeType.String()) {
 		return "", errors.New("invalid file type uploaded")
 	}
 

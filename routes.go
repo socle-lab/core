@@ -1,4 +1,4 @@
-package socle
+package core
 
 import (
 	"net/http"
@@ -7,19 +7,19 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-func (s *Socle) routes(middlewares []string) http.Handler {
+func (c *Core) routes(middlewares []string) http.Handler {
 	mux := chi.NewRouter()
-	s.applyMiddlewares(mux, middlewares)
+	c.applyMiddlewares(mux, middlewares)
 
-	if s.Debug {
+	if c.Debug {
 		mux.Use(middleware.Logger)
 	}
 
 	return mux
 }
 
-// Routes are socle specific routes, which are mounted in the routes file
-// in Socle applications
+// Routes are core specific routes, which are mounted in the routes file
+// in Core applications
 func Routes() http.Handler {
 	r := chi.NewRouter()
 	r.Get("/test-c", func(w http.ResponseWriter, r *http.Request) {

@@ -1,4 +1,4 @@
-package socle
+package core
 
 import (
 	"database/sql"
@@ -15,9 +15,9 @@ import (
 	"github.com/socle-lab/render"
 )
 
-// Socle is the overall type for the Socle package. Members that are exported in this type
+// Core is the overall type for the Core package. Members that are exported in this type
 // are available to any application that uses it.
-type Socle struct {
+type Core struct {
 	appConfig     appConfig
 	env           envConfig
 	AppKey        string
