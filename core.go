@@ -101,6 +101,12 @@ func (c *Core) New(rootPath, moduleKey string) error {
 		return err
 	}
 
+	// init RPC server
+	err = c.initRPCServer()
+	if err != nil {
+		return err
+	}
+
 	// create session
 	err = c.InitSession()
 	if err != nil {
@@ -314,6 +320,28 @@ func (c *Core) initServer() error {
 	c.HTTPServer.Security.CAName = c.AppModule.Config.Security.TLS.CACertName
 	c.HTTPServer.Security.ServerCertName = c.AppModule.Config.Security.TLS.ServerCertName
 	c.HTTPServer.Security.ClientCertName = c.AppModule.Config.Security.TLS.ClientCertName
+	return nil
+
+}
+
+func (c *Core) initRPCServer() error {
+	if !InArrayStr(c.AppModule.Type, []string{"api/rpc"}) {
+		return nil
+	}
+
+	c.RPCServer = RPCServer{
+		Name:    c.env.serverName,
+		Address: c.env.serverAddress,
+		Enabled: c.AppModule.Config.RPCPort > 0,
+	}
+
+	c.RPCServer.Port = c.AppModule.Config.RPCPort
+	c.RPCServer.Secure = c.AppModule.Config.Security.Enabled
+	c.RPCServer.Security.Strategy = c.AppModule.Config.Security.TLS.Strategy
+	c.RPCServer.Security.MutualTLS = c.AppModule.Config.Security.TLS.Mutual
+	c.RPCServer.Security.CAName = c.AppModule.Config.Security.TLS.CACertName
+	c.RPCServer.Security.ServerCertName = c.AppModule.Config.Security.TLS.ServerCertName
+	c.RPCServer.Security.ClientCertName = c.AppModule.Config.Security.TLS.ClientCertName
 	return nil
 
 }

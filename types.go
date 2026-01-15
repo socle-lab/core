@@ -34,6 +34,7 @@ type Core struct {
 	DB            Database
 	Authenticator auth.Authenticator
 	HTTPServer    HTTPServer
+	RPCServer     RPCServer
 	Scheduler     *cron.Cron
 	Mail          mailer.MailConfig
 	FileSystems   map[string]filesystems.FS
@@ -64,5 +65,27 @@ type HTTPServerSecurity struct {
 }
 
 func (s HTTPServer) GetURL() string {
+	return fmt.Sprintf("%s:%d", s.Name, s.Port)
+}
+
+type RPCServer struct {
+	Name     string
+	Address  string
+	Port     int
+	Secure   bool
+	Security RPCServerSecurity
+	Enabled  bool
+}
+
+type RPCServerSecurity struct {
+	Strategy       string
+	DSN            string
+	MutualTLS      bool
+	CAName         string
+	ServerCertName string
+	ClientCertName string
+}
+
+func (s RPCServer) GetURL() string {
 	return fmt.Sprintf("%s:%d", s.Name, s.Port)
 }

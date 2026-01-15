@@ -52,6 +52,7 @@ type module struct {
 
 type moduleConfig struct {
 	Port            int            `yaml:"port"`
+	RPCPort         int            `yaml:"rpc_port"`
 	MaintenancePort int            `yaml:"maintenance_port"`
 	Router          string         `yaml:"router"`
 	Render          string         `yaml:"render"`
