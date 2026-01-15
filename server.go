@@ -19,7 +19,7 @@ func (c *Core) ListenAndServe() error {
 	var err error
 
 	srv := &http.Server{
-		Addr:         c.Server.GetURL(),
+		Addr:         c.HTTPServer.GetURL(),
 		ErrorLog:     c.Log.ErrorLog,
 		Handler:      c.Routes,
 		IdleTimeout:  30 * time.Second,
@@ -59,18 +59,18 @@ func (c *Core) ListenAndServe() error {
 	}()
 	// end
 
-	c.Log.InfoLog.Printf("Listening on  %s with security %v", c.Server.GetURL(), c.Server.Secure)
-	if c.Server.Secure {
+	c.Log.InfoLog.Printf("Listening on  %s with security %v", c.HTTPServer.GetURL(), c.HTTPServer.Secure)
+	if c.HTTPServer.Secure {
 		c.Log.InfoLog.Println("Begin TLS  Security")
 
-		switch c.Server.Security.Strategy {
+		switch c.HTTPServer.Security.Strategy {
 		case "self":
 			c.Log.InfoLog.Println("Begin SELF TLS  Security")
 			srv.TLSConfig = &tls.Config{
 				MinVersion: tls.VersionTLS13,
 			}
 			var caBytes []byte
-			caBytes, err = os.ReadFile(c.Server.Security.CAName + ".crt")
+			caBytes, err = os.ReadFile(c.HTTPServer.Security.CAName + ".crt")
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -80,15 +80,15 @@ func (c *Core) ListenAndServe() error {
 			}
 			srv.TLSConfig.ClientCAs = ca
 
-			if c.Server.Security.MutualTLS {
+			if c.HTTPServer.Security.MutualTLS {
 				srv.TLSConfig.ClientAuth = tls.RequireAndVerifyClientCert
 
 			}
 
-			err = srv.ListenAndServeTLS(c.Server.Security.ServerCertName+".crt", c.Server.Security.ServerCertName+".key")
+			err = srv.ListenAndServeTLS(c.HTTPServer.Security.ServerCertName+".crt", c.HTTPServer.Security.ServerCertName+".key")
 		case "le":
 			c.Log.InfoLog.Println("Begin Let's Encrypt Security")
-			err = http.Serve(autocert.NewListener(c.Server.Security.DSN), nil)
+			err = http.Serve(autocert.NewListener(c.HTTPServer.Security.DSN), nil)
 		}
 
 	} else {

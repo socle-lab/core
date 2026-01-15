@@ -157,7 +157,7 @@ func (c *Core) initRouter() error {
 		return nil
 	}
 	var middlewares []string = c.AppModule.Config.Middlewares
-	c.Server.Middlewares = middlewares
+	c.HTTPServer.Middlewares = middlewares
 	c.Routes = c.routes(middlewares).(*chi.Mux)
 	return nil
 }
@@ -302,18 +302,18 @@ func (c *Core) initServer() error {
 		return nil
 	}
 
-	c.Server = Server{
+	c.HTTPServer = HTTPServer{
 		Name:    c.env.serverName,
 		Address: c.env.serverAddress,
 	}
 
-	c.Server.Port = c.AppModule.Config.Port
-	c.Server.Secure = c.AppModule.Config.Security.Enabled
-	c.Server.Security.Strategy = c.AppModule.Config.Security.TLS.Strategy
-	c.Server.Security.MutualTLS = c.AppModule.Config.Security.TLS.Mutual
-	c.Server.Security.CAName = c.AppModule.Config.Security.TLS.CACertName
-	c.Server.Security.ServerCertName = c.AppModule.Config.Security.TLS.ServerCertName
-	c.Server.Security.ClientCertName = c.AppModule.Config.Security.TLS.ClientCertName
+	c.HTTPServer.Port = c.AppModule.Config.Port
+	c.HTTPServer.Secure = c.AppModule.Config.Security.Enabled
+	c.HTTPServer.Security.Strategy = c.AppModule.Config.Security.TLS.Strategy
+	c.HTTPServer.Security.MutualTLS = c.AppModule.Config.Security.TLS.Mutual
+	c.HTTPServer.Security.CAName = c.AppModule.Config.Security.TLS.CACertName
+	c.HTTPServer.Security.ServerCertName = c.AppModule.Config.Security.TLS.ServerCertName
+	c.HTTPServer.Security.ClientCertName = c.AppModule.Config.Security.TLS.ClientCertName
 	return nil
 
 }

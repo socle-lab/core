@@ -33,7 +33,7 @@ type Core struct {
 	Cache         cache.Cache
 	DB            Database
 	Authenticator auth.Authenticator
-	Server        Server
+	HTTPServer    HTTPServer
 	Scheduler     *cron.Cron
 	Mail          mailer.MailConfig
 	FileSystems   map[string]filesystems.FS
@@ -45,16 +45,16 @@ type Database struct {
 	Pool   *sql.DB
 }
 
-type Server struct {
+type HTTPServer struct {
 	Name        string
 	Address     string
 	Port        int
 	Secure      bool
-	Security    ServerSecurity
+	Security    HTTPServerSecurity
 	Middlewares []string
 }
 
-type ServerSecurity struct {
+type HTTPServerSecurity struct {
 	Strategy       string
 	DSN            string
 	MutualTLS      bool
@@ -63,6 +63,6 @@ type ServerSecurity struct {
 	ClientCertName string
 }
 
-func (s Server) GetURL() string {
+func (s HTTPServer) GetURL() string {
 	return fmt.Sprintf("%s:%d", s.Name, s.Port)
 }
