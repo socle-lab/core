@@ -14,14 +14,37 @@ import (
 	"syscall"
 	"time"
 
+	pkgErrors "github.com/pkg/errors"
 	"golang.org/x/crypto/acme/autocert"
 )
 
-// ListenAndServe starts the HTTP server and handles incoming requests.
+// ListenAndServe starts a server for the specified entrypoint.
+// It checks the protocol of the entrypoint and routes to the appropriate server handler.
+// The entrypoint parameter should match a key in the application's entrypoints configuration.
+// Returns an error if the entrypoint doesn't exist or if the server fails to start.
+func (c *Core) ListenAndServe(entrypoint string) error {
+	// Look up the entrypoint in the application configuration
+	ep, exists := c.App.Entrypoints[entrypoint]
+	if !exists {
+		return pkgErrors.Errorf("entrypoint %s does not exist", entrypoint)
+	}
+
+	// Route to the appropriate server based on protocol
+	switch ep.Protocol {
+	case "http":
+		return c.ListenAndServeHTTP()
+	case "rpc":
+		return c.ListenAndServeRPC()
+	default:
+		return pkgErrors.Errorf("unsupported protocol %s for entrypoint %s", ep.Protocol, entrypoint)
+	}
+}
+
+// ListenAndServeHTTP starts the HTTP server and handles incoming requests.
 // It supports both secure (TLS) and non-secure connections, with graceful shutdown handling.
 // The server will listen on the address and port configured in HTTPServer.
 // Returns an error if the server fails to start or encounters a fatal error.
-func (c *Core) ListenAndServe() error {
+func (c *Core) ListenAndServeHTTP() error {
 	var err error
 
 	// Create HTTP server with configured timeouts and handlers

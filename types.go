@@ -21,6 +21,7 @@ type Core struct {
 	appConfig     appConfig
 	env           envConfig
 	AppKey        string
+	App           application
 	AppModule     module
 	Version       string
 	Debug         bool

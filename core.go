@@ -37,7 +37,7 @@ var maintenanceMode bool
 
 // New reads the .env file, creates our application config, populates the Core type with settings
 // based on .env values, and creates necessary folders and files if they don't exist
-func (c *Core) New(rootPath, moduleKey string) error {
+func (c *Core) New(rootPath, appKey string) error {
 	// Load .env
 	err := env.Load(rootPath)
 	if err != nil {
@@ -52,13 +52,19 @@ func (c *Core) New(rootPath, moduleKey string) error {
 	}
 	c.appConfig = *appConfig
 
-	module, exists := appConfig.Modules[moduleKey]
+	module, exists := appConfig.Modules[appKey]
 	if !exists {
-		return errors.Errorf("Module with key %s does't exist", moduleKey)
+		return errors.Errorf("Module with key %s does't exist", appKey)
 	}
 
-	c.AppKey = moduleKey
+	app, exists := appConfig.Applications[appKey]
+	if !exists {
+		return errors.Errorf("Module with key %s does't exist", appKey)
+	}
+
+	c.AppKey = appKey
 	c.AppModule = module
+	c.App = app
 	c.Debug = c.env.debug
 	c.EncryptionKey = c.env.encryptionKey
 	c.Version = c.appConfig.Version
@@ -76,7 +82,14 @@ func (c *Core) New(rootPath, moduleKey string) error {
 	}
 
 	// connect to database
-	if c.AppModule.Config.Store.Enabled {
+	// Use application store if available, otherwise fall back to module store
+	storeEnabled := false
+	if c.App.Store.Enabled {
+		storeEnabled = true
+	} else if c.AppModule.Config.Store.Enabled {
+		storeEnabled = true
+	}
+	if storeEnabled {
 		err = c.initDB()
 		if err != nil {
 			return err
@@ -96,13 +109,7 @@ func (c *Core) New(rootPath, moduleKey string) error {
 	}
 
 	// init server
-	err = c.initServer()
-	if err != nil {
-		return err
-	}
-
-	// init RPC server
-	err = c.initRPCServer()
+	err = c.initServers()
 	if err != nil {
 		return err
 	}
@@ -159,6 +166,15 @@ func (c *Core) initLoggers() error {
 }
 
 func (c *Core) initRouter() error {
+	// Check if application has HTTP entrypoint
+	httpEntrypoint, hasHTTP := c.App.Entrypoints["http"]
+	if hasHTTP {
+		c.HTTPServer.Middlewares = httpEntrypoint.Middlewares
+		c.Routes = c.routes(httpEntrypoint.Middlewares).(*chi.Mux)
+		return nil
+	}
+
+	// Fall back to module configuration for backward compatibility
 	if !InArrayStr(c.AppModule.Type, []string{"web", "api/rest"}) {
 		return nil
 	}
@@ -303,47 +319,76 @@ func (c *Core) initMailer() error {
 	return nil
 }
 
-func (c *Core) initServer() error {
-	if !InArrayStr(c.AppModule.Type, []string{"web", "api/rest"}) {
-		return nil
+func (c *Core) initServers() error {
+	// Loop through application entrypoints and initialize servers based on protocol
+	for _, entrypoint := range c.App.Entrypoints {
+		switch entrypoint.Protocol {
+		case "http":
+			c.HTTPServer = HTTPServer{
+				Name:    c.env.serverName,
+				Address: c.env.serverAddress,
+			}
+
+			c.HTTPServer.Port = entrypoint.Port
+			c.HTTPServer.Secure = entrypoint.Security.Enabled
+			c.HTTPServer.Security.Strategy = entrypoint.Security.TLS.Strategy
+			c.HTTPServer.Security.MutualTLS = entrypoint.Security.TLS.Mutual
+			c.HTTPServer.Security.CAName = entrypoint.Security.TLS.CACertName
+			c.HTTPServer.Security.ServerCertName = entrypoint.Security.TLS.ServerCertName
+			c.HTTPServer.Security.ClientCertName = entrypoint.Security.TLS.ClientCertName
+
+		case "rpc":
+			c.RPCServer = RPCServer{
+				Name:    c.env.serverName,
+				Address: c.env.serverAddress,
+				Enabled: true,
+			}
+
+			c.RPCServer.Port = entrypoint.Port
+			c.RPCServer.Secure = entrypoint.Security.Enabled
+			c.RPCServer.Security.Strategy = entrypoint.Security.TLS.Strategy
+			c.RPCServer.Security.MutualTLS = entrypoint.Security.TLS.Mutual
+			c.RPCServer.Security.CAName = entrypoint.Security.TLS.CACertName
+			c.RPCServer.Security.ServerCertName = entrypoint.Security.TLS.ServerCertName
+			c.RPCServer.Security.ClientCertName = entrypoint.Security.TLS.ClientCertName
+		}
 	}
 
-	c.HTTPServer = HTTPServer{
-		Name:    c.env.serverName,
-		Address: c.env.serverAddress,
+	// Fall back to module configuration for backward compatibility if no entrypoints found
+	if len(c.App.Entrypoints) == 0 {
+		if InArrayStr(c.AppModule.Type, []string{"web", "api/rest"}) {
+			c.HTTPServer = HTTPServer{
+				Name:    c.env.serverName,
+				Address: c.env.serverAddress,
+			}
+
+			c.HTTPServer.Port = c.AppModule.Config.Port
+			c.HTTPServer.Secure = c.AppModule.Config.Security.Enabled
+			c.HTTPServer.Security.Strategy = c.AppModule.Config.Security.TLS.Strategy
+			c.HTTPServer.Security.MutualTLS = c.AppModule.Config.Security.TLS.Mutual
+			c.HTTPServer.Security.CAName = c.AppModule.Config.Security.TLS.CACertName
+			c.HTTPServer.Security.ServerCertName = c.AppModule.Config.Security.TLS.ServerCertName
+			c.HTTPServer.Security.ClientCertName = c.AppModule.Config.Security.TLS.ClientCertName
+		}
+
+		if InArrayStr(c.AppModule.Type, []string{"api/rpc"}) {
+			c.RPCServer = RPCServer{
+				Name:    c.env.serverName,
+				Address: c.env.serverAddress,
+				Enabled: c.AppModule.Config.RPCPort > 0,
+			}
+
+			c.RPCServer.Port = c.AppModule.Config.RPCPort
+			c.RPCServer.Secure = c.AppModule.Config.Security.Enabled
+			c.RPCServer.Security.Strategy = c.AppModule.Config.Security.TLS.Strategy
+			c.RPCServer.Security.MutualTLS = c.AppModule.Config.Security.TLS.Mutual
+			c.RPCServer.Security.CAName = c.AppModule.Config.Security.TLS.CACertName
+			c.RPCServer.Security.ServerCertName = c.AppModule.Config.Security.TLS.ServerCertName
+			c.RPCServer.Security.ClientCertName = c.AppModule.Config.Security.TLS.ClientCertName
+		}
 	}
 
-	c.HTTPServer.Port = c.AppModule.Config.Port
-	c.HTTPServer.Secure = c.AppModule.Config.Security.Enabled
-	c.HTTPServer.Security.Strategy = c.AppModule.Config.Security.TLS.Strategy
-	c.HTTPServer.Security.MutualTLS = c.AppModule.Config.Security.TLS.Mutual
-	c.HTTPServer.Security.CAName = c.AppModule.Config.Security.TLS.CACertName
-	c.HTTPServer.Security.ServerCertName = c.AppModule.Config.Security.TLS.ServerCertName
-	c.HTTPServer.Security.ClientCertName = c.AppModule.Config.Security.TLS.ClientCertName
 	return nil
-
-}
-
-func (c *Core) initRPCServer() error {
-	if !InArrayStr(c.AppModule.Type, []string{"api/rpc"}) {
-		return nil
-	}
-
-	c.RPCServer = RPCServer{
-		Name:    c.env.serverName,
-		Address: c.env.serverAddress,
-		Enabled: c.AppModule.Config.RPCPort > 0,
-	}
-
-	c.RPCServer.Port = c.AppModule.Config.RPCPort
-	c.RPCServer.Secure = c.AppModule.Config.Security.Enabled
-	c.RPCServer.Security.Strategy = c.AppModule.Config.Security.TLS.Strategy
-	c.RPCServer.Security.MutualTLS = c.AppModule.Config.Security.TLS.Mutual
-	c.RPCServer.Security.CAName = c.AppModule.Config.Security.TLS.CACertName
-	c.RPCServer.Security.ServerCertName = c.AppModule.Config.Security.TLS.ServerCertName
-	c.RPCServer.Security.ClientCertName = c.AppModule.Config.Security.TLS.ClientCertName
-	return nil
-
 }
 
 func (c *Core) InitSession() error {
