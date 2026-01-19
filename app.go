@@ -23,8 +23,6 @@ type appConfig struct {
 		Router string `yaml:"router"` // Default router (e.g., "chi")
 		Render string `yaml:"render"` // Default render engine (e.g., "templ")
 	} `yaml:"defaults"` // Default configuration values
-
-	Modules      map[string]module      `yaml:"modules"`      // Module configurations (ui, api, etc.)
 	Applications map[string]application `yaml:"applications"` // Application configurations (main, cli, etc.)
 }
 

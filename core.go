@@ -52,18 +52,12 @@ func (c *Core) New(rootPath, appKey string) error {
 	}
 	c.appConfig = *appConfig
 
-	module, exists := appConfig.Modules[appKey]
-	if !exists {
-		return errors.Errorf("Module with key %s does't exist", appKey)
-	}
-
 	app, exists := appConfig.Applications[appKey]
 	if !exists {
 		return errors.Errorf("Module with key %s does't exist", appKey)
 	}
 
 	c.AppKey = appKey
-	c.AppModule = module
 	c.App = app
 	c.Debug = c.env.debug
 	c.EncryptionKey = c.env.encryptionKey
