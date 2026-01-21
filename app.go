@@ -12,7 +12,7 @@ import (
 // appConfig represents the root application configuration structure.
 // It contains all top-level configuration including version, server settings,
 // defaults, modules, and applications.
-type appConfig struct {
+type socleConfig struct {
 	Version        string   `yaml:"version"`         // Application version
 	Name           string   `yaml:"name"`            // Application name
 	Description    string   `yaml:"description"`     // Application description
@@ -82,9 +82,23 @@ type moduleConfig struct {
 // They can have multiple entrypoints (HTTP, RPC) and share a common store configuration.
 type application struct {
 	Type        string                `yaml:"type"`                  // Application type: "web", "api", "ui", "cli"
-	Description string                `yaml:"description,omitempty"` // Optional description of the application
-	Store       store                 `yaml:"store,omitempty"`       // Shared store configuration for the application
+	Config      applicationConfig     `yaml:"config"`                // Application configuration
 	Entrypoints map[string]entrypoint `yaml:"entrypoints,omitempty"` // Map of entrypoint names to their configurations (e.g., "http", "rpc")
+}
+
+// applicationConfig contains the configuration for an application.
+// It includes port settings, router/render engine, store, middlewares, and security.
+type applicationConfig struct {
+	Render          string                `yaml:"render"`           // Template render engine (e.g., "templ", "jet")
+	MaintenanceMode maintenanceModeConfig `yaml:"maintenance_mode"` // Maintenance mode configuration
+	Store           store                 `yaml:"store"`            // Database store configurati
+}
+
+// maintenanceModeConfig contains the configuration for the maintenance mode.
+// It includes whether the maintenance mode is enabled and the port number.
+type maintenanceModeConfig struct {
+	Enabled bool `yaml:"enabled"` // Whether the maintenance mode is enabled
+	Port    int  `yaml:"port"`    // Maintenance mode port number
 }
 
 // entrypoint represents a network entrypoint configuration.
@@ -92,10 +106,11 @@ type application struct {
 // Each entrypoint can have its own port, protocol, router, middlewares, and security settings.
 type entrypoint struct {
 	Port        int            `yaml:"port"`                  // Port number for this entrypoint (can use environment variables)
-	Protocol    string         `yaml:"protocol"`              // Protocol type: "http" or "rpc"
-	Router      string         `yaml:"router,omitempty"`      // Router framework (typically for HTTP, e.g., "chi")
+	Protocol    string         `yaml:"protocol"`              // Protocol type: "http", "graphql", "websocket", "rpc" or "grpc"
+	Render      string         `yaml:"render,omitempty"`      // Render engine: "templ", "jet"
 	Middlewares []string       `yaml:"middlewares,omitempty"` // List of middleware names to apply (typically for HTTP)
 	Security    securityConfig `yaml:"security,omitempty"`    // Security/TLS configuration for this entrypoint
+	Enabled     bool           `yaml:"enabled"`               // Whether the entrypoint is enabled
 }
 
 // LoadAppConfig loads and parses the application configuration from a YAML file.
@@ -108,7 +123,7 @@ type entrypoint struct {
 // Returns:
 //   - *appConfig: Pointer to the parsed configuration struct
 //   - error: Error if the file cannot be read or parsed
-func LoadAppConfig(rootPath string) (*appConfig, error) {
+func LoadSocleConfig(rootPath string) (*socleConfig, error) {
 	path := rootPath + "/socle.yaml"
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -118,7 +133,7 @@ func LoadAppConfig(rootPath string) (*appConfig, error) {
 	// Expand environment variables in the YAML content (e.g., ${HTTP_PORT} -> actual value)
 	expanded := expandEnv(string(data))
 
-	var cfg appConfig
+	var cfg socleConfig
 	if err := yaml.Unmarshal([]byte(expanded), &cfg); err != nil {
 		return nil, fmt.Errorf("unable to unmarshal yaml: %w", err)
 	}

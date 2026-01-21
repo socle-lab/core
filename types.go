@@ -18,24 +18,20 @@ import (
 // Core is the overall type for the Core package. Members that are exported in this type
 // are available to any application that uses it.
 type Core struct {
-	appConfig     appConfig
-	env           envConfig
-	AppKey        string
-	App           application
-	AppModule     module
 	Version       string
 	Debug         bool
 	RootPath      string
+	env           envConfig
+	AppKey        string
+	App           application
+	Entrypoints   map[string]*EntrypointServer
 	Log           Logger
-	Routes        *chi.Mux
-	Render        render.Render
 	Session       *scs.SessionManager
+	Render        render.Render
 	EncryptionKey string
 	Cache         cache.Cache
 	DB            Database
 	Authenticator auth.Authenticator
-	HTTPServer    HTTPServer
-	RPCServer     RPCServer
 	Scheduler     *cron.Cron
 	Mail          mailer.MailConfig
 	FileSystems   map[string]filesystems.FS
@@ -88,5 +84,33 @@ type RPCServerSecurity struct {
 }
 
 func (s RPCServer) GetURL() string {
+	return fmt.Sprintf("%s:%d", s.Name, s.Port)
+}
+
+// EntrypointServer represents a server instance for an entrypoint.
+// It contains server configuration and can be used for either HTTP or RPC protocols.
+type EntrypointServer struct {
+	Name        string
+	Address     string
+	Port        int
+	Protocol    string
+	Enabled     bool
+	Secure      bool
+	Security    EntrypointSecurity
+	Middlewares []string
+	Routes      *chi.Mux
+}
+
+// EntrypointSecurity represents security configuration for an entrypoint server.
+type EntrypointSecurity struct {
+	Strategy       string
+	DSN            string
+	MutualTLS      bool
+	CAName         string
+	ServerCertName string
+	ClientCertName string
+}
+
+func (s *EntrypointServer) GetURL() string {
 	return fmt.Sprintf("%s:%d", s.Name, s.Port)
 }
