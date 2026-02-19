@@ -14,7 +14,17 @@ import (
 )
 
 func (c *Core) PopConnect() (*pop.Connection, error) {
-	tx, err := pop.Connect("development")
+	var env string
+	mode := c.env.mode
+	switch mode {
+	case "dev":
+		env = "development"
+	case "test":
+		env = "test"
+	case "prod":
+		env = "production"
+	}
+	tx, err := pop.Connect(env)
 	if err != nil {
 		return nil, err
 	}
