@@ -81,6 +81,11 @@ func (c *Core) New(rootPath, appKey string) error {
 		if err != nil {
 			return err
 		}
+
+		err = doMigration(*c)
+		if err != nil {
+			return err
+		}
 	}
 
 	// config scheduler
@@ -143,6 +148,22 @@ func (c *Core) New(rootPath, appKey string) error {
 func (c *Core) initLoggers() error {
 	c.Log.InfoLog = log.New(os.Stdout, c.AppKey+" INFO\t", log.Ldate|log.Ltime)
 	c.Log.ErrorLog = log.New(os.Stdout, c.AppKey+" ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
+	return nil
+}
+
+func doMigration(s Core) error {
+
+	tx, err := s.PopConnect()
+	if err != nil {
+		return err
+	}
+	defer tx.Close()
+
+	err = s.RunPopMigrations(tx)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
